@@ -27,7 +27,7 @@ namespace DoneTask.Models
         [StringLength(20, MinimumLength = 2, ErrorMessage = ErrorMsg.RangoCaracteres)]
         [RegularExpression(@"^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$", ErrorMessage = ErrorMsg.SoloLetras)]
         public string Apellido { get; set; }
-        public DateTime FechaAlta { get; set; } = DateTime.Now;
+        public DateTime FechaAlta { get; set; } = DateTime.UtcNow;
 
         [Required(ErrorMessage = ErrorMsg.CampoRequerido)]
         [EmailAddress(ErrorMessage = ErrorMsg.FormatoEmail)]
@@ -36,8 +36,8 @@ namespace DoneTask.Models
             get => base.Email;
             set => base.Email = value;
         }
-      
 
-        public List<Tablero> Tableros { get; set; } = new List<Tablero>();
+        public List<UsuarioTablero> TablerosUsuario { get; set; } = new();
+
     }
 }

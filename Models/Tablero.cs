@@ -27,11 +27,11 @@
 
             public Usuario Creador { get; set; }
 
-            // Muchos a muchos
-            public List<Usuario> Participantes { get; set; } = new();
+           
 
             // Uno a muchos
             public List<ListaTarea> ListaTareas { get; set; } = new();
+            public List<UsuarioTablero> UsuariosTablero { get; set; } = new();
         }
     }
 }

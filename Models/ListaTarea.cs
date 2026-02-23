@@ -17,7 +17,7 @@ namespace DoneTask.Models
         [StringLength(250, ErrorMessage = ErrorMsg.RangoCaracteres)]
         public string Descripcion { get; set; }
 
-        public DateTime FechaCreacion { get; set; } = DateTime.Now;
+        public DateTime FechaCreacion { get; set; } = DateTime.UtcNow;
 
         // FK
         public Guid TableroId { get; set; }

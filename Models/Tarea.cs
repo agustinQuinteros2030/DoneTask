@@ -18,7 +18,7 @@ namespace DoneTask.Models
 
         public bool Completada { get; set; } = false;
 
-        public DateTime FechaCreacion { get; set; } = DateTime.Now;
+        public DateTime FechaCreacion { get; set; } = DateTime.UtcNow;
 
         // FK
         public Guid ListaTareaId { get; set; }
