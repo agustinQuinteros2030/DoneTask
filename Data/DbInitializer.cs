@@ -32,7 +32,7 @@ namespace DoneTask.Data
             var adminUser = await userManager.FindByEmailAsync(adminEmail);
 
             if (adminUser != null)
-                return; // ya existe → no hacemos nada
+                return; 
 
             var user = new Usuario
             {

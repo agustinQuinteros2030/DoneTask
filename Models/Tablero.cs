@@ -19,10 +19,10 @@
             [StringLength(250, ErrorMessage = ErrorMsg.RangoCaracteres)]
             public string Descripcion { get; set; }
 
-            public DateTime FechaCreacion { get; set; } = DateTime.Now;
+            public DateTime FechaCreacion { get; set; } = DateTime.UtcNow;
 
             // FK del creador
-            [Required]
+
             public Guid CreadorId { get; set; }
 
             public Usuario Creador { get; set; }

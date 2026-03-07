@@ -1,16 +1,14 @@
 using DoneTask.Data;
-
 using DoneTask.Models;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
+using System.Threading.Tasks;
+using System;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using System;
-using System.Threading.Tasks;
-
-
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Configuration;
 
 namespace DoneTask
 {
@@ -20,12 +18,10 @@ namespace DoneTask
         {
             var builder = WebApplication.CreateBuilder(args);
 
-            builder.Services.AddControllersWithViews();
+            builder.Services.AddControllers();
 
             builder.Services.AddDbContext<ApplicationDbContext>(options =>
-                options.UseNpgsql(
-                    builder.Configuration.GetConnectionString("DefaultConnection")
-                )
+                options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"))
             );
 
             builder.Services
@@ -36,54 +32,65 @@ namespace DoneTask
                     options.Password.RequireUppercase = false;
                     options.Password.RequireNonAlphanumeric = false;
                     options.Password.RequiredLength = 6;
-
                     options.User.RequireUniqueEmail = true;
                 })
                 .AddEntityFrameworkStores<ApplicationDbContext>()
                 .AddDefaultTokenProviders();
 
+            builder.Services.ConfigureApplicationCookie(options =>
+            {
+                options.Cookie.Name = "donetask.auth";
+                options.Cookie.HttpOnly = true;
+                options.Cookie.SameSite = SameSiteMode.None;
+                options.Cookie.SecurePolicy =
+                    builder.Environment.IsDevelopment()
+                        ? CookieSecurePolicy.None
+                        : CookieSecurePolicy.Always;
+            });
+
+            builder.Services.AddCors(options =>
+            {
+                options.AddPolicy("ReactPolicy", policy =>
+                {
+                    policy
+                        .WithOrigins("http://localhost:5173")
+                        .AllowAnyHeader()
+                        .AllowAnyMethod()
+                        .AllowCredentials();
+                });
+            });
+
             var app = builder.Build();
 
-            // ======================
-            // SEED DE ROLES / USUARIOS
-            // ======================
+            // Seed
             using (var scope = app.Services.CreateScope())
             {
                 var services = scope.ServiceProvider;
-
-                var roleManager = services.GetRequiredService<RoleManager<IdentityRole<Guid>>>();
-                var userManager = services.GetRequiredService<UserManager<Usuario>>();
-
-                await DbInitializer.SeedRolesAsync(roleManager);
-                await DbInitializer.SeedAdminAsync(userManager);
+                await DbInitializer.SeedRolesAsync(
+                    services.GetRequiredService<RoleManager<IdentityRole<Guid>>>()
+                );
+                await DbInitializer.SeedAdminAsync(
+                    services.GetRequiredService<UserManager<Usuario>>()
+                );
             }
-
-            // ======================
-            // Pipeline HTTP
-            // ======================
 
             if (!app.Environment.IsDevelopment())
             {
-                app.UseExceptionHandler("/Home/Error");
+                app.UseExceptionHandler("/error");
                 app.UseHsts();
             }
 
             app.UseHttpsRedirection();
-            app.UseStaticFiles();
-
             app.UseRouting();
+
+            app.UseCors("ReactPolicy");
 
             app.UseAuthentication();
             app.UseAuthorization();
 
-            app.MapControllerRoute(
-                name: "default",
-                pattern: "{controller=Home}/{action=Index}/{id?}"
-            );
+            app.MapControllers();
 
             app.Run();
         }
     }
-}
-
-
+        }
