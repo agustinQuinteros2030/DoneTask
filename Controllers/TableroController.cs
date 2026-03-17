@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using System;
 using System.Security.Claims;
 using System.Linq;
+using DoneTask.Models.Dto;
 
 
 namespace DoneTask.Controllers
@@ -87,17 +88,37 @@ namespace DoneTask.Controllers
 
         // POST: api/tablero
         [HttpPost]
-        public async Task<IActionResult> CrearTablero([FromBody] Tablero tablero)
+        public async Task<IActionResult> CrearTablero([FromBody] CrearTableroDto dto)
         {
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
 
-            tablero.CreadorId = Guid.Parse(userId);
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userId))
+                return Unauthorized();
+
+            var tablero = new Tablero
+            {
+                Nombre = dto.Nombre,
+                Descripcion = dto.Descripcion,
+                CreadorId = Guid.Parse(userId),
+                FechaCreacion = DateTime.UtcNow
+            };
 
             _context.Tableros.Add(tablero);
-
             await _context.SaveChangesAsync();
 
-            return Ok(tablero);
+            // Mapear a DTO de respuesta (opcional)
+            var response = new TableroResponseDto
+            {
+                Id = tablero.Id,
+                Nombre = tablero.Nombre,
+                Descripcion = tablero.Descripcion,
+                FechaCreacion = tablero.FechaCreacion,
+                CreadorId = tablero.CreadorId
+            };
+
+            return Ok(response);
         }
         // PUT: api/tablero/{id}
 

@@ -1,8 +1,11 @@
 using DoneTask.Data;
 using DoneTask.Models;
+using DoneTask.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 using System.Threading.Tasks;
 using System;
 using Microsoft.Extensions.DependencyInjection;
@@ -37,23 +40,45 @@ namespace DoneTask
                 .AddEntityFrameworkStores<ApplicationDbContext>()
                 .AddDefaultTokenProviders();
 
-            builder.Services.ConfigureApplicationCookie(options =>
-            {
-                options.Cookie.Name = "donetask.auth";
-                options.Cookie.HttpOnly = true;
-                options.Cookie.SameSite = SameSiteMode.None;
-                options.Cookie.SecurePolicy =
-                    builder.Environment.IsDevelopment()
-                        ? CookieSecurePolicy.None
-                        : CookieSecurePolicy.Always;
-            });
+            // Registrar JwtService
+            builder.Services.AddScoped<JwtService>();
 
+
+            // JWT Authentication
+            builder.Services.AddAuthentication("Bearer")
+                .AddJwtBearer("Bearer", options =>
+                {
+                    options.TokenValidationParameters = new TokenValidationParameters
+                    {
+                        ValidateIssuer = false,
+                        ValidateAudience = false,
+                        ValidateLifetime = true,
+                        ValidateIssuerSigningKey = true,
+
+                        IssuerSigningKey = new SymmetricSecurityKey(
+                            Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"])
+                        )
+                    };
+
+                    // Leer token desde cookie
+                    options.Events = new Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerEvents
+                    {
+                        OnMessageReceived = context =>
+                        {
+                            context.Token = context.Request.Cookies["authToken"];
+                            return Task.CompletedTask;
+                        }
+                    };
+                });
+
+
+            // CORS para React
             builder.Services.AddCors(options =>
             {
                 options.AddPolicy("ReactPolicy", policy =>
                 {
                     policy
-                        .WithOrigins("http://localhost:5173")
+                        .WithOrigins("https://localhost:5173")
                         .AllowAnyHeader()
                         .AllowAnyMethod()
                         .AllowCredentials();
@@ -66,9 +91,11 @@ namespace DoneTask
             using (var scope = app.Services.CreateScope())
             {
                 var services = scope.ServiceProvider;
+
                 await DbInitializer.SeedRolesAsync(
                     services.GetRequiredService<RoleManager<IdentityRole<Guid>>>()
                 );
+
                 await DbInitializer.SeedAdminAsync(
                     services.GetRequiredService<UserManager<Usuario>>()
                 );
@@ -93,4 +120,4 @@ namespace DoneTask
             app.Run();
         }
     }
-        }
+}
